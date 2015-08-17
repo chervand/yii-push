@@ -5,34 +5,36 @@ class PushCommand extends CConsoleCommand
 	public function init()
 	{
 		Yii::import('vendor.chervand.yii-push.components.*');
-		Yii::import('vendor.chervand.yii-push.interfaces.*');
 	}
 
 	public function actionIndex()
 	{
 		$queue = new Queue();
 
-		$queue->attachEventHandler('onBeforeProcess', function() use(&$queue) {
+		$queue->attachEventHandler('onBeforeProcess', function () use (&$queue) {
 			echo 'Starting to process a queue of ' . $queue->count . ' messages.' . PHP_EOL;
 		});
-		$queue->attachEventHandler('onAfterProcess', function() use(&$queue) {
+		$queue->attachEventHandler('onAfterProcess', function () use (&$queue) {
 			echo 'Queue have been processed.' . PHP_EOL;
 		});
 
-		$socketConnection = new SocketConnection($queue);
-		$httpConnection = new HTTPConnection($queue);
+		$connection = new APNSConnection($queue);
+		$connection->certificate = Yii::app()->basePath . '/cert/apns_prod_cert.pem';
+		$connection->passphrase = 'Parent123';
 
-		$messages[] = new APNSMessage($socketConnection);
-		$messages[] = new APNSMessage($socketConnection);
-		$messages[] = new GCMMessage($httpConnection);
-		$messages[] = new GCMMessage($httpConnection);
-		$messages[] = new APNSMessage($socketConnection);
-		$messages[] = new APNSMessage($socketConnection);
-		$messages[] = new GCMMessage($httpConnection);
+		$deviceToken = '86e6b954eac7a4322e3dde0801ff36c8c90d0eda105a50e275e551765a97a8b7';
 
-		foreach ($messages as $message) {
-			$queue->enqueue($message);
-		}
+		$message1 = new APNSMessage($connection, $deviceToken);
+		$message1->alert = [
+			'title' => 'Apple sucks',
+			'body' => 'olololo'
+		];
+
+		$message2 = new APNSMessage($connection, $deviceToken);
+		$message2->alert = 'Message 2';
+
+		$queue->enqueue($message1);
+		$queue->enqueue($message2);
 
 		try {
 			$result = $queue->process();
@@ -40,7 +42,7 @@ class PushCommand extends CConsoleCommand
 				echo get_class($this) . ' have been finished.' . PHP_EOL;
 			}
 		} catch (Exception $e) {
-			echo get_class($e) . ': '. $e->getMessage() . PHP_EOL;
+			echo get_class($e) . ': ' . $e->getMessage() . PHP_EOL;
 		}
 
 	}

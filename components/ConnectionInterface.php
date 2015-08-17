@@ -17,4 +17,10 @@ interface ConnectionInterface
 	 * @return Queue
 	 */
 	function getQueue();
+
+	/**
+	 * @param MessageInterface $message
+	 * @return bool
+	 */
+	function send(MessageInterface &$message);
 }

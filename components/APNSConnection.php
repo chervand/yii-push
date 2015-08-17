@@ -6,6 +6,20 @@ class APNSConnection extends Connection
 	public $passphrase;
 	private $_stream;
 
+	public function send(MessageInterface &$message)
+	{
+		if (!$message instanceof APNSMessage) {
+			throw new CException('Message is not instance of APNSMessage class.');
+		}
+
+		$deviceToken = $message->deviceToken;
+		$payload = $message->payload;
+		$msg = chr(0) . pack('n', 32) . pack('H*', $deviceToken) . pack('n', strlen($payload)) . $payload;
+		$result = fwrite($this->_stream, $msg, strlen($msg));
+
+		return is_int($result);
+	}
+
 	protected function beforeQueueProcess()
 	{
 		$this->open();

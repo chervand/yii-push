@@ -17,10 +17,12 @@ abstract class Connection extends CComponent implements ConnectionInterface
 	 */
 	public function __construct(QueueInterface &$queue)
 	{
-		$this->_q = $queue;
+		$this->_q = &$queue;
 		$this->_q->attachEventHandler('onBeforeProcess', [$this, 'beforeQueueProcess']);
 		$this->_q->attachEventHandler('onAfterProcess', [$this, 'afterQueueProcess']);
 	}
+
+	abstract public function send(MessageInterface &$message);
 
 	/**
 	 * @return Queue|QueueInterface
