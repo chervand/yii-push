@@ -2,6 +2,9 @@
 
 class PushCommand extends CConsoleCommand
 {
+	public $apnsCertificate;
+	public $apnsPassphrase;
+
 	public function init()
 	{
 		Yii::import('vendor.chervand.yii-push.components.*');
@@ -19,16 +22,13 @@ class PushCommand extends CConsoleCommand
 		});
 
 		$connection = new APNSConnection($queue);
-		$connection->certificate = Yii::app()->basePath . '/cert/apns_prod_cert.pem';
-		$connection->passphrase = 'Parent123';
+		$connection->certificate = $this->apnsCertificate;
+		$connection->passphrase = $this->apnsPassphrase;
 
 		$deviceToken = '86e6b954eac7a4322e3dde0801ff36c8c90d0eda105a50e275e551765a97a8b7';
 
 		$message1 = new APNSMessage($connection, $deviceToken);
-		$message1->alert = [
-			'title' => 'Apple sucks',
-			'body' => 'olololo'
-		];
+		$message1->alert = 'Message 1';
 
 		$message2 = new APNSMessage($connection, $deviceToken);
 		$message2->alert = 'Message 2';
