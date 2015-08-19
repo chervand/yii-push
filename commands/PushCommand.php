@@ -2,48 +2,79 @@
 
 class PushCommand extends CConsoleCommand
 {
-	public $apnsCertificate;
-	public $apnsPassphrase;
+	public $idlingDelay = 3600;
+	/** @var  stdClass */
+	protected $connections;
+	/** @var  Queue */
+	protected $queue;
+
+	protected $idlingTime;
 
 	public function init()
 	{
-		Yii::import('vendor.chervand.yii-push.components.*');
+		/** @var Push $push */
+		$push = Yii::app()->push;
+
+		$this->queue = new Queue();
+		$this->connections = new stdClass();
+		$this->connections->apns = new APNSConnection($this->queue, false);
+
+		/** @var APNSConnection $apnsConnection */
+		$apnsConnection = $this->connections->apns;
+		$apnsConnection->certificate = $push->apnsProductionCertificate;
+		$apnsConnection->passphrase = $push->apnsProductionCertificatePassphrase;
+
+		$this->queue->attachEventHandler('onBeforeProcess', function () use (&$apnsConnection) {
+
+			if ($this->queue->count > 0) {
+				$this->idlingTime = null;
+			} elseif (!isset($this->idlingTime)) {
+				$this->idlingTime = time();
+			}
+
+			if (!$apnsConnection->isConnected() && $this->queue->count > 0) {
+				$apnsConnection->open();
+				echo 'APNS Connection opened.' . PHP_EOL;
+			}
+
+			echo 'Starting to process a queue of ' . $this->queue->count . ' messages.' . PHP_EOL;
+
+		});
+
+		$this->queue->attachEventHandler('onAfterProcess', function () use (&$apnsConnection) {
+
+			echo 'Queue have been processed.' . PHP_EOL;
+
+			if ($this->isIdling() && $apnsConnection->isConnected()) {
+				$apnsConnection->close();
+				echo 'APNS Connection closed.' . PHP_EOL;
+			}
+
+		});
+	}
+
+	protected function isIdling()
+	{
+		return isset($this->idlingTime) && time() - $this->idlingTime > $this->idlingDelay;
 	}
 
 	public function actionIndex()
 	{
-		$queue = new Queue();
-
-		$queue->attachEventHandler('onBeforeProcess', function () use (&$queue) {
-			echo 'Starting to process a queue of ' . $queue->count . ' messages.' . PHP_EOL;
-		});
-		$queue->attachEventHandler('onAfterProcess', function () use (&$queue) {
-			echo 'Queue have been processed.' . PHP_EOL;
-		});
-
-		$connection = new APNSConnection($queue);
-		$connection->certificate = $this->apnsCertificate;
-		$connection->passphrase = $this->apnsPassphrase;
-
-		$deviceToken = '86e6b954eac7a4322e3dde0801ff36c8c90d0eda105a50e275e551765a97a8b7';
-
-		$message1 = new APNSMessage($connection, $deviceToken);
-		$message1->alert = 'Message 1';
-
-		$message2 = new APNSMessage($connection, $deviceToken);
-		$message2->alert = 'Message 2';
-
-		$queue->enqueue($message1);
-		$queue->enqueue($message2);
-
-		try {
-			$result = $queue->process();
-			if ($result) {
-				echo get_class($this) . ' have been finished.' . PHP_EOL;
+		while (!$this->queue->isProcessing()) {
+			try {
+				foreach ($this->queued() as $message) {
+					$this->queue->enqueue($message);
+				}
+				$this->queue->process();
+			} catch (Exception $e) {
+				echo get_class($e) . ': ' . $e->getMessage() . PHP_EOL;
 			}
-		} catch (Exception $e) {
-			echo get_class($e) . ': ' . $e->getMessage() . PHP_EOL;
 		}
+		echo get_class($this) . ' have been finished.' . PHP_EOL;
+	}
 
+	protected function queued()
+	{
+		return [];
 	}
 }
