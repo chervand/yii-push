@@ -6,10 +6,9 @@ class Queue extends CQueue implements QueueInterface
 	{
 		$event = new CEvent($this);
 		$this->onBeforeProcess($event);
-		foreach ($this as $item) {
-			if ($item instanceof MessageInterface) {
-				$item->send();
-			}
+		while ($this->count > 0) {
+			$item = $this->dequeue();
+			$item->send();
 		}
 		$this->onAfterProcess($event);
 		return true;
