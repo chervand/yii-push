@@ -6,8 +6,21 @@ class APNSConnection extends Connection
 	public $passphrase;
 	private $_stream;
 
+	public function __construct(QueueInterface &$queue, $autoconnect = true)
+	{
+		parent::__construct($queue);
+		if ($autoconnect === true) {
+			$this->queue->attachEventHandler('onBeforeProcess', [$this, 'open']);
+			$this->queue->attachEventHandler('onAfterProcess', [$this, 'close']);
+		}
+	}
+
 	public function send(MessageInterface &$message)
 	{
+		if (!$this->isConnected()) {
+			throw new CException('APNSMessage send failed: disconnected.');
+		}
+
 		if (!$message instanceof APNSMessage) {
 			throw new CException('Message is not instance of APNSMessage class.');
 		}
@@ -20,9 +33,9 @@ class APNSConnection extends Connection
 		return is_int($result);
 	}
 
-	protected function beforeQueueProcess()
+	public function isConnected()
 	{
-		$this->open();
+		return is_resource($this->_stream);
 	}
 
 	public function open()
@@ -47,11 +60,6 @@ class APNSConnection extends Connection
 		if (!$this->_stream) {
 			throw new CException('Failed to connect: ' . $errstr);
 		}
-	}
-
-	protected function afterQueueProcess()
-	{
-		$this->close();
 	}
 
 	public function close()

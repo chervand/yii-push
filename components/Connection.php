@@ -3,10 +3,11 @@
 /**
  * Class Connection
  * @author chervand <chervand@gmail.com>
+ *
+ * @property Queue $queue
  */
 abstract class Connection extends CComponent implements ConnectionInterface
 {
-
 	/**
 	 * @var Queue
 	 */
@@ -18,8 +19,6 @@ abstract class Connection extends CComponent implements ConnectionInterface
 	public function __construct(QueueInterface &$queue)
 	{
 		$this->_q = &$queue;
-		$this->_q->attachEventHandler('onBeforeProcess', [$this, 'beforeQueueProcess']);
-		$this->_q->attachEventHandler('onAfterProcess', [$this, 'afterQueueProcess']);
 	}
 
 	abstract public function send(MessageInterface &$message);
@@ -30,21 +29,5 @@ abstract class Connection extends CComponent implements ConnectionInterface
 	public function getQueue()
 	{
 		return $this->_q;
-	}
-
-	/**
-	 * @return mixed
-	 */
-	protected function beforeQueueProcess()
-	{
-
-	}
-
-	/**
-	 * @return mixed
-	 */
-	protected function afterQueueProcess()
-	{
-
 	}
 }
