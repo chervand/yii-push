@@ -2,6 +2,8 @@
 
 class Queue extends CQueue implements QueueInterface
 {
+	private $_p = false;
+
 	public function process()
 	{
 		$event = new CEvent($this);
@@ -16,11 +18,18 @@ class Queue extends CQueue implements QueueInterface
 
 	public function onBeforeProcess($event)
 	{
+		$this->_p = true;
 		$this->raiseEvent('onBeforeProcess', $event);
 	}
 
 	public function onAfterProcess($event)
 	{
 		$this->raiseEvent('onAfterProcess', $event);
+		$this->_p = false;
+	}
+
+	public function isProcessing()
+	{
+		return $this->_p;
 	}
 }
