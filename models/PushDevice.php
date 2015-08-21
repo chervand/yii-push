@@ -107,4 +107,15 @@ class PushDevice extends CActiveRecord
 		}
 		return false;
 	}
+
+	public function scopes()
+	{
+		return [
+			'deleted' => ['condition' => $this->tableAlias . '.status="' . self::STATUS_DELETED . '"'],
+			'disabled' => ['condition' => $this->tableAlias . '.status="' . self::STATUS_DISABLED . '"'],
+			'active' => ['condition' => $this->tableAlias . '.status="' . self::STATUS_ACTIVE . '"'],
+			'ios' => ['condition' => $this->tableAlias . '.platform="' . self::PLATFORM_IOS . '"'],
+			'android' => ['condition' => $this->tableAlias . '.platform="' . self::PLATFORM_ANDROID . '"'],
+		];
+	}
 }
