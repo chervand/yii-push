@@ -118,4 +118,17 @@ class PushDevice extends CActiveRecord
 			'android' => ['condition' => $this->tableAlias . '.platform="' . self::PLATFORM_ANDROID . '"'],
 		];
 	}
+
+	protected function beforeValidate()
+	{
+		if (parent::beforeValidate()) {
+			$user = Yii::app()->user;
+			if ($user instanceof CWebUser) {
+				$this->user_id = $user->id;
+			}
+			return true;
+		} else {
+			return false;
+		}
+	}
 }
