@@ -14,7 +14,6 @@ class m150817_162754_push_device extends CDbMigration
 			'status' => 'TINYINT NOT NULL DEFAULT 1',
 			'KEY (user_id)',
 			'KEY (platform)',
-			'UNIQUE KEY (token, platform)',
 			'KEY (status)'
 		], 'ENGINE=InnoDB CHARSET=utf8 COLLATE=utf8_unicode_ci');
 	}
