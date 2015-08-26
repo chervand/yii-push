@@ -2,12 +2,24 @@
 
 class PushCommand extends CConsoleCommand
 {
+	/**
+	 * @var int
+	 */
 	public $idlingDelay = 3600;
-	/** @var  stdClass */
+
+	/**
+	 * @var stdClass
+	 */
 	protected $connections;
-	/** @var  Queue */
+
+	/**
+	 * @var Queue
+	 */
 	protected $queue;
 
+	/**
+	 * @var int
+	 */
 	protected $idlingTime;
 
 	public function init()
@@ -60,12 +72,15 @@ class PushCommand extends CConsoleCommand
 
 	public function actionIndex()
 	{
+		echo get_class($this) . ' have been started.' . PHP_EOL;
 		while (!$this->queue->isProcessing()) {
 			try {
 				foreach ($this->queued() as $message) {
 					$this->queue->enqueue($message);
 				}
-				$this->queue->process();
+				if ($this->queue->count > 0) {
+					$this->queue->process();
+				}
 			} catch (Exception $e) {
 				echo get_class($e) . ': ' . $e->getMessage() . PHP_EOL;
 			}
