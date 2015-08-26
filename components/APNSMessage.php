@@ -25,11 +25,20 @@ class APNSMessage extends Message
 	/**
 	 * @param ConnectionInterface $connection
 	 * @param string | null $deviceToken
+	 * @throws CException
 	 */
 	public function __construct(ConnectionInterface &$connection, $deviceToken = null)
 	{
 		parent::__construct($connection);
+		if (!static::isTokenValid($deviceToken)) {
+			throw new CException('Token ' . $deviceToken . ' is invalid.');
+		}
 		$this->_deviceToken = $deviceToken;
+	}
+
+	public static function isTokenValid($token)
+	{
+		return ctype_xdigit($token);
 	}
 
 	/**
