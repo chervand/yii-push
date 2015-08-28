@@ -2,6 +2,8 @@
 
 /**
  * Class Message
+ *
+ * @property bool $isSending
  */
 class Message extends CComponent implements MessageInterface
 {
@@ -9,6 +11,7 @@ class Message extends CComponent implements MessageInterface
 	 * @var ConnectionInterface
 	 */
 	private $_c;
+	private $_s = false;
 
 	/**
 	 * @param ConnectionInterface $connection
@@ -19,10 +22,18 @@ class Message extends CComponent implements MessageInterface
 	}
 
 	/**
-	 *
+	 * @return bool
 	 */
 	public function send()
 	{
-		return $this->_c->send($this);
+		$this->_s = true;
+		$sent =  $this->_c->send($this);
+		$this->_s = false;
+		return $sent;
+	}
+
+	public function getIsSending()
+	{
+		return $this->_s;
 	}
 }
