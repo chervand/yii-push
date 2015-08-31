@@ -21,7 +21,7 @@ class Queue extends CQueue implements QueueInterface
 	 * current item
 	 * @var
 	 */
-	private $_c;
+	private $_i;
 
 	/**
 	 * Removes every message from the queue and send it.
@@ -33,10 +33,10 @@ class Queue extends CQueue implements QueueInterface
 		$event = new CEvent($this);
 		$this->onBeforeProcess($event);
 		while ($this->count > 0) {
-			$this->_c = $this->dequeue();
-			if ($this->_c instanceof Message) {
+			$this->_i = $this->dequeue();
+			if ($this->_i instanceof Message) {
 				$this->onBeforeSend($event);
-				$this->_c->send();
+				$this->_i->send();
 				$this->onAfterSend($event);
 			}
 		}
@@ -73,7 +73,7 @@ class Queue extends CQueue implements QueueInterface
 	public function onAfterSend($event)
 	{
 		$this->raiseEvent('onAfterSend', $event);
-		$this->_c = null;
+		$this->_i = null;
 	}
 
 	/**
@@ -102,7 +102,7 @@ class Queue extends CQueue implements QueueInterface
 	 */
 	public function getIsSending()
 	{
-		return $this->_c instanceof Message && $this->_c->isSending;
+		return $this->_i instanceof Message && $this->_i->isSending;
 	}
 
 	/**
@@ -111,8 +111,8 @@ class Queue extends CQueue implements QueueInterface
 	 */
 	public function getCurrent()
 	{
-		if ($this->_c instanceof Message && $this->_s === true) {
-			return $this->_c;
+		if ($this->_i instanceof Message) {
+			return $this->_i;
 		}
 		return null;
 	}

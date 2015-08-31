@@ -62,7 +62,7 @@ class PushDevice extends CActiveRecord
 	{
 		switch($this->platform) {
 			case self::PLATFORM_IOS:
-				return APNSMessage::isTokenValid($this->token);
+				return APNSMessage::validateDeviceToken($this->token);
 				break;
 		}
 		return false;

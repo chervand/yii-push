@@ -135,6 +135,21 @@ class APNSMessage extends Message
 		return isset($this->_payloadContentAvailable) ? $this->_payloadContentAvailable : self::PAYLOAD_CONTENT_AVAILABLE_DEFAULT;
 	}
 
+	public function getNotificationIdentifier()
+	{
+		return $this->_notificationIdentifier;
+	}
+
+	public function getExpirationDate()
+	{
+		return isset($this->_expirationDate) ? $this->_expirationDate : time() + 60;
+	}
+
+	public function getPriority()
+	{
+		return isset($this->_priority) ? $this->priority : 10;
+	}
+
 	public function setDeviceToken($deviceToken)
 	{
 		if (!self::validateDeviceToken($deviceToken)) {
@@ -177,6 +192,24 @@ class APNSMessage extends Message
 	public function setPayloadContentAvailable($contentAvailable)
 	{
 		$this->_payloadContentAvailable = $contentAvailable;
+		return $this;
+	}
+
+	public function setNotificationIdentifier($notificationIdentifier)
+	{
+		$this->_notificationIdentifier = $notificationIdentifier;
+		return $this;
+	}
+
+	public function setExpirationDate($expirationDate)
+	{
+		$this->_expirationDate = $expirationDate;
+		return $this;
+	}
+
+	public function setPriority($priority)
+	{
+		$this->_priority = $priority;
 		return $this;
 	}
 
@@ -240,7 +273,6 @@ class APNSMessage extends Message
 	 */
 	private function _buildEnhanced()
 	{
-		$_p = $this->_payload();
 		throw new CException('Enhanced Notification Format build is not implemented.');
 	}
 
@@ -251,13 +283,11 @@ class APNSMessage extends Message
 	private function _buildDefault()
 	{
 		$_p = $this->_payload();
-		return CVarDumper::dumpAsString($_p);
 		$_n = pack('CnH*', 1, 32, $this->deviceToken)
 			. pack('CnA*', 2, strlen($_p), $_p)
-//			. pack('CnA*', 3, 4, $this->notificationIdentifier)
-//			. pack('CnN', 3, 4, $this->notificationIdentifier)
-//			. pack('CnN', 4, 4, $this->expireTime)
-			. pack('CnC', 5, 1, 10);
+			. pack('CnN', 3, 4, $this->notificationIdentifier)
+			. pack('CnN', 4, 4, $this->expirationDate)
+			. pack('CnC', 5, 1, $this->priority);
 		return pack('CN', self::FORMAT_DEFAULT, strlen($_n)) . $_n;
 	}
 }
