@@ -1,20 +1,28 @@
 <?php
 
 /**
- * Class Message
+ * Class Message implements an abstract push message.
+
+ * @property bool $isSending true if message is sending at the moment and false otherwise
  *
- * @property bool $isSending
+ * @author chervand <chervand@gmail.com>
  */
-class Message extends CComponent implements MessageInterface
+abstract class Message extends CComponent implements MessageInterface
 {
 	/**
-	 * @var ConnectionInterface
+	 * @var Connection assigned connection reference
 	 */
 	private $_c;
+
+	/**
+	 * @var bool internal sending status
+	 */
 	private $_s = false;
 
 	/**
-	 * @param ConnectionInterface $connection
+	 * Constructor.
+	 * Assigns connection reference to the message object.
+	 * @param ConnectionInterface $connection connection reference
 	 */
 	public function __construct(ConnectionInterface &$connection)
 	{
@@ -22,16 +30,28 @@ class Message extends CComponent implements MessageInterface
 	}
 
 	/**
-	 * @return bool
+	 * Returns a message string.
+	 * @return string message string
+	 */
+	abstract public function __toString();
+
+	/**
+	 * Sends the message using its connection.
+	 * @return bool true if message was sent successfully and false otherwise
+	 * @see _c
 	 */
 	public function send()
 	{
 		$this->_s = true;
-		$sent =  $this->_c->send($this);
+		$sent = $this->_c->send($this);
 		$this->_s = false;
 		return $sent;
 	}
 
+	/**
+	 * Returns message sending status.
+	 * @return bool true if message is sending at the moment and false otherwise
+	 */
 	public function getIsSending()
 	{
 		return $this->_s;
