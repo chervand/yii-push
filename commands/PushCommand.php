@@ -44,6 +44,12 @@ class PushCommand extends CConsoleCommand
 		$push = Yii::app()->push;
 
 		$this->queue = new Queue();
+
+		$this->queue->attachEventHandler('onBeforeProcess', [$this, 'beforeQueueProcess']);
+		$this->queue->attachEventHandler('onBeforeSend', [$this, 'beforeQueueSend']);
+		$this->queue->attachEventHandler('onAfterSend', [$this, 'afterQueueSend']);
+		$this->queue->attachEventHandler('onAfterProcess', [$this, 'afterQueueProcess']);
+
 		$this->connections = new stdClass();
 		$this->connections->apns = new APNSConnection($this->queue, false);
 
@@ -52,10 +58,9 @@ class PushCommand extends CConsoleCommand
 		$apnsConnection->certificate = $push->apnsProductionCertificate;
 		$apnsConnection->passphrase = $push->apnsProductionCertificatePassphrase;
 
-		$this->queue->attachEventHandler('onBeforeProcess', [$this, 'beforeProcess']);
-		$this->queue->attachEventHandler('onBeforeSend', [$this, 'beforeSend']);
-		$this->queue->attachEventHandler('onAfterSend', [$this, 'afterSend']);
-		$this->queue->attachEventHandler('onAfterProcess', [$this, 'afterProcess']);
+		$apnsConnection->attachEventHandler('onOpen', [$this, 'onAPNSConnectionOpen']);
+		$apnsConnection->attachEventHandler('onClose', [$this, 'onAPNSConnectionClose']);
+		$apnsConnection->attachEventHandler('onError', [$this, 'onAPNSConnectionError']);
 	}
 
 	/**
@@ -67,12 +72,7 @@ class PushCommand extends CConsoleCommand
 		echo get_class($this) . ' have been started.' . PHP_EOL;
 		while (!$this->queue->isProcessing) {
 			try {
-				foreach ($this->queued() as $message) {
-					$this->queue->enqueue($message);
-				}
-				if ($this->queue->count > 0) {
-					$this->queue->process();
-				}
+				$this->queue->process();
 			} catch (Exception $e) {
 				echo get_class($e) . ': ' . $e->getMessage() . PHP_EOL;
 			}
@@ -90,18 +90,9 @@ class PushCommand extends CConsoleCommand
 	}
 
 	/**
-	 * Should return an array of messages.
-	 * @return Message[]
-	 */
-	protected function queued()
-	{
-		return [];
-	}
-
-	/**
 	 * Before queue processed event handler.
 	 */
-	protected function beforeProcess()
+	protected function beforeQueueProcess()
 	{
 		/** @var APNSConnection $apnsConnection */
 		$apnsConnection = $this->connections->apns;
@@ -112,9 +103,8 @@ class PushCommand extends CConsoleCommand
 			$this->idlingTime = time();
 		}
 
-		if (!$apnsConnection->isConnected() && $this->queue->count > 0) {
+		if (!$apnsConnection->isConnected && $this->queue->count > 0) {
 			$apnsConnection->open();
-			echo 'APNS Connection opened.' . PHP_EOL;
 		}
 
 		echo 'Starting to process a queue of ' . $this->queue->count . ' messages.' . PHP_EOL;
@@ -123,66 +113,49 @@ class PushCommand extends CConsoleCommand
 	/**
 	 * Before message send event handler.
 	 */
-	protected function beforeSend()
+	protected function beforeQueueSend()
 	{
 		/** @var APNSConnection $apnsConnection */
 		$apnsConnection = $this->connections->apns;
 
-		if (!$apnsConnection->isConnected()) {
+		if (!$apnsConnection->isConnected) {
 			$apnsConnection->open();
-			echo 'APNS Connection opened.' . PHP_EOL;
 		}
 	}
 
 	/**
 	 * After message send event handler.
 	 */
-	protected function afterSend()
+	protected function afterQueueSend()
 	{
-		/** @var APNSConnection $apnsConnection */
-		$apnsConnection = $this->connections->apns;
-
-		usleep(300000); // 300 ms
-
-		if ($apnsConnection->checkErrorResponse()) {
-
-			echo $apnsConnection->error->identifier . ': ' . $apnsConnection->error->status_code . ' - ' . $apnsConnection->error->description . PHP_EOL;
-
-			if ($apnsConnection->error->status_code == 8) { //replace with events 'onInvalidToken' ?
-
-				$item = $this->queue->item;
-				if ($item instanceof APNSMessage) {
-					$count = PushDevice::model()->updateAll(
-						['status' => PushDevice::STATUS_DISABLED],
-						[
-							'scopes' => ['active', 'ios'],
-							'condition' => 'token=:token',
-							'params' => [':token' => $item->deviceToken]
-						]
-					);
-					echo 'Token: ' . $item->deviceToken . ', ' . $count . ' devices disabled.' . PHP_EOL;
-				}
-			}
-
-			$apnsConnection->close();
-			echo 'APNS Connection closed.' . PHP_EOL;
-
-		}
 	}
 
 	/**
 	 * After queue processed event handler.
 	 */
-	protected function afterProcess()
+	protected function afterQueueProcess()
 	{
 		/** @var APNSConnection $apnsConnection */
 		$apnsConnection = $this->connections->apns;
 
 		echo 'Queue have been processed.' . PHP_EOL;
 
-		if ($this->isIdling && $apnsConnection->isConnected()) {
+		if ($this->isIdling && $apnsConnection->isConnected) {
 			$apnsConnection->close();
-			echo 'APNS Connection closed.' . PHP_EOL;
 		}
+	}
+
+	protected function onAPNSConnectionOpen()
+	{
+		echo 'APNS Connection opened.' . PHP_EOL;
+	}
+
+	protected function onAPNSConnectionClose()
+	{
+		echo 'APNS Connection closed.' . PHP_EOL;
+	}
+
+	protected function onAPNSConnectionError()
+	{
 	}
 }
