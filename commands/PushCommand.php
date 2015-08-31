@@ -70,7 +70,7 @@ class PushCommand extends CConsoleCommand
 	public function actionIndex()
 	{
 		echo get_class($this) . ' have been started.' . PHP_EOL;
-		while (!$this->queue->isProcessing) {
+		while ($this->loop()) {
 			try {
 				$this->queue->process();
 			} catch (Exception $e) {
@@ -78,6 +78,11 @@ class PushCommand extends CConsoleCommand
 			}
 		}
 		echo get_class($this) . ' have been finished.' . PHP_EOL;
+	}
+
+	protected function loop()
+	{
+		return !$this->queue->isProcessing;
 	}
 
 	/**
@@ -97,6 +102,8 @@ class PushCommand extends CConsoleCommand
 		/** @var APNSConnection $apnsConnection */
 		$apnsConnection = $this->connections->apns;
 
+		$apnsConnection->checkErrorResponse();
+
 		if ($this->queue->count > 0) {
 			$this->idlingTime = null;
 		} elseif (!isset($this->idlingTime)) {
@@ -107,7 +114,9 @@ class PushCommand extends CConsoleCommand
 			$apnsConnection->open();
 		}
 
-		echo 'Starting to process a queue of ' . $this->queue->count . ' messages.' . PHP_EOL;
+		if ($this->queue->count > 0) {
+			echo 'Starting to process a queue of ' . $this->queue->count . ' messages.' . PHP_EOL;
+		}
 	}
 
 	/**
@@ -138,7 +147,9 @@ class PushCommand extends CConsoleCommand
 		/** @var APNSConnection $apnsConnection */
 		$apnsConnection = $this->connections->apns;
 
-		echo 'Queue have been processed.' . PHP_EOL;
+		if ($this->queue->count > 0) {
+			echo 'Queue have been processed.' . PHP_EOL;
+		}
 
 		if ($this->isIdling && $apnsConnection->isConnected) {
 			$apnsConnection->close();

@@ -59,13 +59,13 @@ class APNSConnection extends Connection
 			stream_context_set_option($context, 'ssl', 'passphrase', $this->passphrase);
 		}
 
-		$this->_stream = stream_socket_client('ssl://gateway.push.apple.com:2195',
-			$err, $errstr, 60,
+		$this->_stream = @stream_socket_client('ssl://gateway.push.apple.com:2195',
+			$errno, $errstr, 10,
 			STREAM_CLIENT_CONNECT | STREAM_CLIENT_PERSISTENT,
 			$context);
 
 		if (!$this->_stream) {
-			throw new CException('Failed to connect: ' . $errstr);
+			throw new CException('Failed to connect: ' . $errno . ' - ' . $errstr);
 		}
 
 		$this->onOpen(new CEvent());
@@ -100,8 +100,6 @@ class APNSConnection extends Connection
 		}
 
 		$result = @fwrite($this->_stream, $message, strlen($message));
-
-		$this->checkErrorResponse();
 
 		return is_int($result);
 	}

@@ -25,7 +25,6 @@ class Queue extends CQueue implements QueueInterface
 
 	/**
 	 * Removes every message from the queue and send it.
-	 * @return bool
 	 * @throws CException
 	 */
 	public function process()
@@ -33,15 +32,13 @@ class Queue extends CQueue implements QueueInterface
 		$event = new CEvent($this);
 		$this->onBeforeProcess($event);
 		while ($this->count > 0) {
-			$this->_i = $this->dequeue();
+			$this->onBeforeSend($event);
 			if ($this->_i instanceof Message) {
-				$this->onBeforeSend($event);
 				$this->_i->send();
-				$this->onAfterSend($event);
 			}
+			$this->onAfterSend($event);
 		}
 		$this->onAfterProcess($event);
-		return true;
 	}
 
 	/**
@@ -51,8 +48,8 @@ class Queue extends CQueue implements QueueInterface
 	 */
 	public function onBeforeProcess($event)
 	{
-		$this->_p = true;
 		$this->raiseEvent('onBeforeProcess', $event);
+		$this->_p = true;
 	}
 
 	/**
@@ -62,6 +59,7 @@ class Queue extends CQueue implements QueueInterface
 	 */
 	public function onBeforeSend($event)
 	{
+		$this->_i = $this->dequeue();
 		$this->raiseEvent('onBeforeSend', $event);
 	}
 
@@ -83,8 +81,8 @@ class Queue extends CQueue implements QueueInterface
 	 */
 	public function onAfterProcess($event)
 	{
-		$this->raiseEvent('onAfterProcess', $event);
 		$this->_p = false;
+		$this->raiseEvent('onAfterProcess', $event);
 	}
 
 	/**
