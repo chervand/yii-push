@@ -32,7 +32,7 @@ class PushCommand extends CConsoleCommand
 	 * internal idling time storage
 	 * @var int
 	 */
-	protected $idlingTime;
+	private $_idlingTime;
 
 	/**
 	 * Init.
@@ -69,15 +69,16 @@ class PushCommand extends CConsoleCommand
 	 */
 	public function actionIndex()
 	{
-		echo get_class($this) . ' have been started.' . PHP_EOL;
+		$this->log(get_class($this) . ' have been started.');
 		while ($this->loop()) {
 			try {
 				$this->queue->process();
 			} catch (Exception $e) {
-				echo get_class($e) . ': ' . $e->getMessage() . PHP_EOL;
+				$this->log(get_class($e) . ': ' . $e->getMessage(), CLogger::LEVEL_ERROR);
+				$this->terminate();
 			}
 		}
-		echo get_class($this) . ' have been finished.' . PHP_EOL;
+		$this->log(get_class($this) . ' have been finished.');
 	}
 
 	protected function loop()
@@ -91,7 +92,7 @@ class PushCommand extends CConsoleCommand
 	 */
 	protected function getIsIdling()
 	{
-		return isset($this->idlingTime) && time() - $this->idlingTime > $this->idlingDelay;
+		return isset($this->_idlingTime) && time() - $this->_idlingTime > $this->idlingDelay;
 	}
 
 	/**
@@ -105,9 +106,9 @@ class PushCommand extends CConsoleCommand
 		$apnsConnection->checkErrorResponse();
 
 		if ($this->queue->count > 0) {
-			$this->idlingTime = null;
-		} elseif (!isset($this->idlingTime)) {
-			$this->idlingTime = time();
+			$this->_idlingTime = null;
+		} elseif (!isset($this->_idlingTime)) {
+			$this->_idlingTime = time();
 		}
 
 		if (!$apnsConnection->isConnected && $this->queue->count > 0) {
@@ -115,7 +116,7 @@ class PushCommand extends CConsoleCommand
 		}
 
 		if ($this->queue->count > 0) {
-			echo 'Starting to process a queue of ' . $this->queue->count . ' messages.' . PHP_EOL;
+			$this->log('Starting to process a queue of ' . $this->queue->count . ' messages.', CLogger::LEVEL_INFO, __FUNCTION__);
 		}
 	}
 
@@ -148,7 +149,7 @@ class PushCommand extends CConsoleCommand
 		$apnsConnection = $this->connections->apns;
 
 		if ($this->queue->count > 0) {
-			echo 'Queue have been processed.' . PHP_EOL;
+			$this->log('Queue have been processed.' . $this->queue->count . ' messages.', CLogger::LEVEL_INFO, __FUNCTION__);
 		}
 
 		if ($this->isIdling && $apnsConnection->isConnected) {
@@ -158,15 +159,27 @@ class PushCommand extends CConsoleCommand
 
 	protected function onAPNSConnectionOpen()
 	{
-		echo 'APNS Connection opened.' . PHP_EOL;
+		$this->log('APNS Connection opened.', CLogger::LEVEL_INFO, __FUNCTION__);
 	}
 
 	protected function onAPNSConnectionClose()
 	{
-		echo 'APNS Connection closed.' . PHP_EOL;
+		$this->log('APNS Connection closed.', CLogger::LEVEL_INFO, __FUNCTION__);
 	}
 
 	protected function onAPNSConnectionError()
 	{
+	}
+
+	protected function log($msg, $level = CLogger::LEVEL_INFO, $category = null)
+	{
+		$_c = 'chervand.yii-push.daemon.' . (string)getmypid();
+		Yii::log($msg, $level, $category ? $_c . '.' . $category : $_c);
+	}
+
+	protected function terminate($code = 1)
+	{
+		$this->log('Terminating ' . get_class($this) . ' with exit code ' . $code . '.');
+		exit($code);
 	}
 }
