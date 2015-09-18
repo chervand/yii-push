@@ -108,6 +108,7 @@ class PushCommand extends CConsoleCommand
 		if ($this->queue->count > 0) {
 			$this->_idlingTime = null;
 		} elseif (!isset($this->_idlingTime)) {
+			$this->log(get_class($this) . ' is idling.');
 			$this->_idlingTime = time();
 		}
 
@@ -179,7 +180,7 @@ class PushCommand extends CConsoleCommand
 
 	protected function terminate($code = 1)
 	{
-		$this->log('Terminating ' . get_class($this) . ' with exit code ' . $code . '.');
+		$this->log('Terminating ' . get_class($this) . ' with exit code ' . $code . '.', CLogger::LEVEL_WARNING);
 		exit($code);
 	}
 }
