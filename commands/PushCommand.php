@@ -69,16 +69,16 @@ class PushCommand extends CConsoleCommand
 	 */
 	public function actionIndex()
 	{
-		$this->log(get_class($this) . ' have been started.');
+		$this->log(get_class($this) . ' have been started.', CLogger::LEVEL_WARNING, 'command');
 		while ($this->loop()) {
 			try {
 				$this->queue->process();
 			} catch (Exception $e) {
-				$this->log(get_class($e) . ': ' . $e->getMessage(), CLogger::LEVEL_ERROR);
+				$this->log(get_class($e) . ': ' . $e->getMessage(), CLogger::LEVEL_ERROR, 'command');
 				$this->terminate();
 			}
 		}
-		$this->log(get_class($this) . ' have been finished.');
+		$this->log(get_class($this) . ' have been finished.', CLogger::LEVEL_WARNING, 'command');
 	}
 
 	protected function loop()
@@ -108,7 +108,7 @@ class PushCommand extends CConsoleCommand
 		if ($this->queue->count > 0) {
 			$this->_idlingTime = null;
 		} elseif (!isset($this->_idlingTime)) {
-			$this->log(get_class($this) . ' is idling.');
+			$this->log(get_class($this) . ' is idling.', 'command');
 			$this->_idlingTime = time();
 		}
 
@@ -117,7 +117,7 @@ class PushCommand extends CConsoleCommand
 		}
 
 		if ($this->queue->count > 0) {
-			$this->log('Starting to process a queue of ' . $this->queue->count . ' messages.', CLogger::LEVEL_INFO, __FUNCTION__);
+			$this->log('Starting to process a queue of ' . $this->queue->count . ' messages.', CLogger::LEVEL_INFO, 'queue');
 		}
 	}
 
@@ -150,7 +150,7 @@ class PushCommand extends CConsoleCommand
 		$apnsConnection = $this->connections->apns;
 
 		if ($this->queue->count > 0) {
-			$this->log('Queue have been processed.' . $this->queue->count . ' messages.', CLogger::LEVEL_INFO, __FUNCTION__);
+			$this->log('Queue have been processed.' . $this->queue->count . ' messages.', CLogger::LEVEL_INFO, 'queue');
 		}
 
 		if ($this->isIdling && $apnsConnection->isConnected) {
@@ -160,12 +160,12 @@ class PushCommand extends CConsoleCommand
 
 	protected function onAPNSConnectionOpen()
 	{
-		$this->log('APNS Connection opened.', CLogger::LEVEL_INFO, __FUNCTION__);
+		$this->log('APNS Connection opened.', CLogger::LEVEL_INFO, 'apns');
 	}
 
 	protected function onAPNSConnectionClose()
 	{
-		$this->log('APNS Connection closed.', CLogger::LEVEL_INFO, __FUNCTION__);
+		$this->log('APNS Connection closed.', CLogger::LEVEL_INFO, 'apns');
 	}
 
 	protected function onAPNSConnectionError()
@@ -180,7 +180,7 @@ class PushCommand extends CConsoleCommand
 
 	protected function terminate($code = 1)
 	{
-		$this->log('Terminating ' . get_class($this) . ' with exit code ' . $code . '.', CLogger::LEVEL_WARNING);
+		$this->log('Terminating ' . get_class($this) . ' with exit code ' . $code . '.', CLogger::LEVEL_WARNING, 'command');
 		exit($code);
 	}
 }
